@@ -1,0 +1,34 @@
+{
+  "build": {
+    "dockerfile": "Dockerfile"
+  },
+  "hostRequirements": {
+    "cpus": 2
+  },
+  "postCreateCommand": "make post-create",
+  "features": {
+    "ghcr.io/devcontainers/features/docker-in-docker:2": {},
+    "ghcr.io/devcontainers/features/sshd:1": {
+      "version": "latest"
+    },
+    "ghcr.io/tailscale/codespace/tailscale": {
+      "version": "1.58.2"
+    },
+    "./local-features/of": {
+      "shallowClone": true
+    },
+    "./local-features/of-devel": {}
+  },
+  "overrideFeatureInstallOrder": [
+    "ghcr.io/devcontainers/features/docker-in-docker:2",
+    "ghcr.io/devcontainers/features/sshd:1",
+    "ghcr.io/tailscale/codespace/tailscale",
+    "./local-features/of",
+    "./local-features/of-devel"
+  ],
+  "runArgs": [
+    "--shm-size=1g",
+    "--cap-add=SYS_ADMIN",
+    "--device=/dev/net/tun"
+  ]
+}

@@ -1,0 +1,7 @@
+[user]
+	name = onefootball-data-insights
+	email = 82086424+onefootball-data-insights@users.noreply.github.com
+[init]
+	defaultBranch = main
+[core]
+	editor = emacs
