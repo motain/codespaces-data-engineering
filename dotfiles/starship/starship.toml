@@ -1,0 +1,14 @@
+[username]
+disabled = true
+[directory]
+truncation_length = 8
+truncate_to_repo = false
+[hostname]
+format = '[$ssh_symbol](bold blue)'
+disabled = false
+[container]
+disabled = true
+[os]
+disabled = true
+[package]
+disabled = true

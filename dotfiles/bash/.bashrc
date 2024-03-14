@@ -1,5 +1,5 @@
 ze() {
-  items=("ALBERTO" "MARLON" "VALERY")
+  items=("ALBERTO" "MARLON" "VALERY" "FACUNDO")
   config=$(printf "%s\n" "${items[@]}" | fzf --prompt="Start Zellij " --height=~50% --layout=reverse --border --exit-0)
   if [[ -z $config ]]; then
     echo "Nothing selected"
@@ -7,3 +7,5 @@ ze() {
   fi
   zellij attach --create $config
 }
+
+umask 0022

@@ -75,11 +75,18 @@
 ;; You can also try 'gd' (or 'C-c c d') to jump to their definition and see how
 ;; they are implemented.
 
-;; different shape for insert and command mode
-(add-hook 'evil-insert-state-entry-hook (lambda () (send-string-to-terminal "\033[6 q")))
-(add-hook 'evil-insert-state-exit-hook  (lambda () (send-string-to-terminal "\033[2 q")))
-
 ;; don't prompt before exiting
 (setq confirm-kill-emacs nil)
 ;; don't prompt the first time we start vterm
 (setq vterm-always-compile-module t)
+;; use fish instead of bash
+(setq vterm-shell "/home/linuxbrew/.linuxbrew/bin/fish")
+;; default path has the wrong permissions
+(setq server-socket-dir (concat "~/.emacs.d/" (getenv "ZELLIJ_SESSION_NAME") "/"))
+;; shortcut to start deer
+(evil-global-set-key 'normal "-" 'deer)
+;; When done with this frame, type SPC q f`?
+(setq server-client-instructions nil)
+;; No prompt
+(map! :leader
+      :desc "Delete frame" "q f" #'delete-frame)

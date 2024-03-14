@@ -1,9 +1,9 @@
 #!/bin/bash -i
 
-set -e
+set -xe
 
 su - $_REMOTE_USER <<EOF
-	set -e
+	set -xe
 	export PATH=/home/linuxbrew/.linuxbrew/bin:$PATH
 EOF
 

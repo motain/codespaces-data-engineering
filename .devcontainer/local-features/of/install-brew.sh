@@ -106,6 +106,7 @@ check_packages \
   patch \
   sudo \
   tzdata \
+  acl \
   uuid-runtime
 
 # Install Homebrew

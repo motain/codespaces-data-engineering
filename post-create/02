@@ -1,0 +1,23 @@
+#!/bin/bash -i
+
+set -xe
+
+export POETRY_VIRTUALENVS_IN_PROJECT=true
+cd "$(dirname "$0")"
+source lib.sh
+cd ..
+
+make install
+
+echo $ATUIN_LOGIN | bash -i
+atuin sync -f
+
+~/.emacs.d/bin/doom sync
+
+clone data-techdocs
+make_setup data-techdocs
+
+clone naughty-austin
+
+clone loving-fermat
+make_setup loving-fermat
