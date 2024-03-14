@@ -1,5 +1,5 @@
 # Intro
-The devcontainer from OneFootball data engineering.
+The devcontainer from OneFootball data engineering. Doom Emacs already configured for Python development.
 * https://www.linkedin.com/pulse/reality-vs-expectations-how-we-have-solved-problem-hiring-miorin-dcpcf
 
 # Setup
