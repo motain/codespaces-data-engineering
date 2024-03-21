@@ -9,15 +9,10 @@ cd ..
 
 make install
 
-echo $ATUIN_LOGIN | bash -i
-atuin sync -f
+if [ ! -z "$ATUIN_LOGIN" ]
+then
+    echo $ATUIN_LOGIN | bash -i
+    atuin sync -f
+fi
 
 ~/.emacs.d/bin/doom sync
-
-clone data-techdocs
-make_setup data-techdocs
-
-clone naughty-austin
-
-clone loving-fermat
-make_setup loving-fermat

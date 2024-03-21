@@ -90,3 +90,13 @@
 ;; No prompt
 (map! :leader
       :desc "Delete frame" "q f" #'delete-frame)
+
+(after! keycast
+  (define-minor-mode keycast-mode
+    "Show current command and its key binding in the mode line."
+    :global t
+    (if keycast-mode
+        (add-hook 'pre-command-hook 'keycast--update t)
+      (remove-hook 'pre-command-hook 'keycast--update))))
+(add-to-list 'global-mode-string '("" keycast-mode-line))
+(require 'keycast)
