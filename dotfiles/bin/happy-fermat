@@ -1,0 +1,5 @@
+#!/usr/bin/env doomscript
+
+(message
+ (concat
+  "Aborting..."))

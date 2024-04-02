@@ -1,4 +1,4 @@
-#!/bin/bash -i
+#!/bin/bash
 # if you modify this file, you need to trigger a manual build
 #
 # run-parts will not go in infinite loop because it will ignore these files
@@ -16,6 +16,6 @@ umask 0022
 echo "umask 0022" >> $HOME/.bashrc
 chmod 0755 /workspaces
 fd . --type d /workspaces/ | xargs chmod 775
-rm -rf /workspaces/codespaces-data-engineering
+mv /workspaces/codespaces-data-engineering /workspaces/codespaces-data-engineering-`date +%s`
 clone codespaces-data-engineering
-run-parts /workspaces/codespaces-data-engineering/post-create
+run-parts /workspaces/codespaces-data-engineering/update-content

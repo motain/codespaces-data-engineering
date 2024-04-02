@@ -1,0 +1,2 @@
+#!/usr/bin/env sh
+exec emacsclient -a '' -t -s ${ZELLIJ_SESSION_NAME:-server} "$@"

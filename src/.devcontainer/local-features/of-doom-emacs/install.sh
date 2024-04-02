@@ -1,61 +1,62 @@
-#!/bin/bash -i
+#!/bin/bash
 
 set -xe
 
-bash ./install-brew.sh
-
 su - $_REMOTE_USER <<EOF
 	set -xe
-	ulimit -n `ulimit -Hn`
 	export PATH=/home/linuxbrew/.linuxbrew/bin:$PATH
-	brew install \
-		starship \
-		direnv \
-		lazygit \
-		zellij \
-		fish \
-		gh \
-		ripgrep \
-		fd \
-		fzf \
-		lf \
-		pipx \
-		node \
-		awscli \
-		emacs \
-		nvim \
-		cmake \
-		libtool \
-		tmux \
-		atuin \
-		micromamba \
-		postgresql@14 \
-		zoxide
-	pipx install \
-		poetry \
-		meltano \
-		rich-cli
-	git clone --depth 1 https://github.com/doomemacs/doomemacs ~/.emacs.d
-	~/.emacs.d/bin/doom install --fonts --force
-	# no more commands after doom
+	mkdir -p /home/vscode/.doom.d/snippets
+	touch /home/vscode/.doom.d/config.el
+	touch /home/vscode/.doom.d/init.el
+	touch /home/vscode/.doom.d/packages.el
 EOF
 
-cat <<EOF > /home/vscode/.doom.d/init.el
+cat <<'EOF' > /home/vscode/.doom.d/config.el # {{{
+;;; $DOOMDIR/config.el -*- lexical-binding: t; -*-
+
+(setq doom-theme 'doom-one)
+
+(setq display-line-numbers-type 'relative)
+
+(setq org-directory "~/org/")
+
+;; don't prompt before exiting
+(setq confirm-kill-emacs nil)
+;; don't prompt the first time we start vterm
+(setq vterm-always-compile-module t)
+;; use fish instead of bash
+(setq vterm-shell "/home/linuxbrew/.linuxbrew/bin/fish")
+;; default path has the wrong permissions
+;; (setq server-socket-dir (concat "~/.emacs.d/" (getenv "ZELLIJ_SESSION_NAME") "/"))
+;; shortcut to start deer
+(evil-global-set-key 'normal "-" 'deer)
+;; When done with this frame, type SPC q f`?
+(setq server-client-instructions nil)
+;; No prompt
+(map! :leader
+      :desc "Delete frame" "q f" #'delete-frame)
+
+(after! keycast
+  (define-minor-mode keycast-mode
+    "Show current command and its key binding in the mode line."
+    :global t
+    (if keycast-mode
+        (add-hook 'pre-command-hook 'keycast--update t)
+      (remove-hook 'pre-command-hook 'keycast--update))))
+(add-to-list 'global-mode-string '("" keycast-mode-line))
+(require 'keycast)
+
+(use-package! poetry
+  :defer t
+  :config
+  (setq poetry-tracking-strategy 'projectile)
+  )
+
+EOF
+# }}}
+
+cat <<'EOF' > /home/vscode/.doom.d/init.el # {{{
 ;;; init.el -*- lexical-binding: t; -*-
-
-;; This file controls what Doom modules are enabled and what order they load
-;; in. Remember to run 'doom sync' after modifying it!
-
-;; NOTE Press 'SPC h d h' (or 'C-h d h' for non-vim users) to access Doom's
-;;      documentation. There you'll find a link to Doom's Module Index where all
-;;      of our modules are listed, including what flags they support.
-
-;; NOTE Move your cursor over a module's name (or its flags) and press 'K' (or
-;;      'C-c c k' for non-vim users) to view its documentation. This works on
-;;      flags as well (those symbols that start with a plus).
-;;
-;;      Alternatively, press 'gd' (or 'C-c c d') on a module to browse its
-;;      directory (for easy access to its source code).
 
 (doom! :input
        ;;bidi              ; (tfel ot) thgir etirw uoy gnipleh
@@ -92,14 +93,14 @@ cat <<EOF > /home/vscode/.doom.d/init.el
        (vc-gutter +pretty) ; vcs diff in the fringe
        vi-tilde-fringe   ; fringe tildes to mark beyond EOB
        ;;window-select     ; visually switch windows
-       workspaces        ; tab emulation, persistence & separate workspaces
+       ;;workspaces        ; tab emulation, persistence & separate workspaces
        ;;zen               ; distraction-free coding or writing
 
        :editor
        (evil +everywhere); come to the dark side, we have cookies
        file-templates    ; auto-snippets for empty files
        fold              ; (nigh) universal code folding
-       ;;(format +onsave)  ; automated prettiness
+       (format +onsave)  ; automated prettiness
        ;;god               ; run Emacs commands without modifier keys
        ;;lispy             ; vim for lisp, for people who don't like vim
        ;;multiple-cursors  ; editing in many places at once
@@ -133,7 +134,7 @@ cat <<EOF > /home/vscode/.doom.d/init.el
        ;;collab            ; buffers with friends
        ;;debugger          ; FIXME stepping through code, to help you add bugs
        ;;direnv
-       ;;docker
+       (docker +lsp)
        ;;editorconfig      ; let someone else argue about tabs vs spaces
        ;;ein               ; tame Jupyter notebooks with emacs
        (eval +overlay)     ; run code, run (also, repls)
@@ -216,7 +217,7 @@ cat <<EOF > /home/vscode/.doom.d/init.el
        ;;swift             ; who asked for emoji variables?
        ;;terra             ; Earth and Moon in alignment for performance.
        ;;web               ; the tubes
-       ;;yaml              ; JSON, but readable
+       (yaml +lsp +tree-sitter)             ; JSON, but readable
        ;;zig               ; C, but simpler
 
        :email
@@ -236,6 +237,21 @@ cat <<EOF > /home/vscode/.doom.d/init.el
        ;;literate
        (default +bindings +smartparens))
 EOF
+# }}}
+
+cat <<'EOF' > /home/vscode/.doom.d/packages.el # {{{
+;; -*- no-byte-compile: t; -*-
+
+(package! git-auto-commit-mode)
+(package! keycast)
+EOF
+# }}}
+
+su - $_REMOTE_USER <<EOF
+	set -xe
+	export PATH=/home/linuxbrew/.linuxbrew/bin:$PATH
+	git clone --depth 1 https://github.com/doomemacs/doomemacs ~/.emacs.d
+EOF
 
 su - $_REMOTE_USER <<EOF
 	set -xe
@@ -247,10 +263,15 @@ EOF
 su - $_REMOTE_USER <<EOF
 	set -xe
 	export PATH=/home/linuxbrew/.linuxbrew/bin:$PATH
-	npm install -g @devcontainers/cli
-	curl https://sdk.cloud.google.com > install.sh
-	bash install.sh --disable-prompts
-	rm install.sh
+	~/.emacs.d/bin/doom env
+	# no more commands after doom
+EOF
+
+su - $_REMOTE_USER <<EOF
+	set -xe
+	export PATH=/home/linuxbrew/.linuxbrew/bin:$PATH
+	emacs --fg-daemon --eval '(setq vterm-always-compile-module t)' --eval '(vterm-module-compile)' --eval '(kill-emacs)'
+	npm -g --prefix /home/vscode/.emacs.d/.local/etc/lsp/npm/pyright install pyright
 EOF
 
 echo 'Done!'

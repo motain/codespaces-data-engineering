@@ -1,0 +1,12 @@
+#!/bin/bash
+
+set -xe
+
+cd "$(dirname "$0")"
+source lib.sh
+cd ..
+
+make install
+
+# first time fast to be able to create the env with the tokens
+~/.emacs.d/bin/doom sync -B

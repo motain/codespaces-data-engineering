@@ -1,11 +1,27 @@
 # add
 # "postCreateCommand": "make post-create",
 # to devcontainer.json
+.PHONY: on-create
+on-create:
+	env
+	echo pass
+
+.PHONY: update-content
+update-content:
+	env
+	/workspaces/codespaces-data-engineering/update-content/01.sh
+
 .PHONY: post-create
 post-create:
+	env
 ifeq ($(CODESPACES), true)
-	/workspaces/codespaces-data-engineering/post-create/01.sh
+	run-parts /workspaces/codespaces-data-engineering/post-create
 endif
+
+# you have to generate the GITHUB_TOKEN manually to be able to push to ghcr.io
+.PHONY: build
+build:
+	devcontainer build --workspace-folder src
 
 # backup the dotfiles
 .PHONY: backup
@@ -18,9 +34,12 @@ backup:
 	cp ~/.doom.d/config.el dotfiles/doomemacs/config.el
 	cp ~/.doom.d/init.el dotfiles/doomemacs/init.el
 	cp ~/.doom.d/packages.el dotfiles/doomemacs/packages.el
+	cp ~/.doom.d/snippets/text-mode/* dotfiles/doomemacs/snippets/text-mode
 	cp ~/.config/lazygit/config.yml dotfiles/lazygit/config.yml
 	cp ~/.config/atuin/config.toml dotfiles/atuin/config.toml
 	cp ~/.config/starship.toml dotfiles/starship/starship.toml
+	cp ~/.local/bin/happy-fermat dotfiles/bin/happy-fermat
+	cp ~/.local/bin/happy-emacs dotfiles/bin/happy-emacs
 
 # install the dotfiles
 .PHONY: install
@@ -37,6 +56,7 @@ install:
 	cp dotfiles/doomemacs/config.el ~/.doom.d/config.el
 	cp dotfiles/doomemacs/init.el ~/.doom.d/init.el
 	cp dotfiles/doomemacs/packages.el ~/.doom.d/packages.el
+	cp -r dotfiles/doomemacs/snippets ~/.doom.d/
 	cat dotfiles/bash/.bashrc >> ~/.bashrc
 	mkdir -p ~/.config/lazygit
 	cp dotfiles/lazygit/config.yml ~/.config/lazygit/config.yml
@@ -44,3 +64,6 @@ install:
 	cp dotfiles/atuin/config.toml ~/.config/atuin/config.toml
 	mkdir -p ~/.config
 	cp dotfiles/starship/starship.toml ~/.config/starship.toml
+	mkdir -p ~/.local/bin
+	cp dotfiles/bin/happy-fermat ~/.local/bin/happy-fermat
+	cp dotfiles/bin/happy-emacs ~/.local/bin/happy-emacs
