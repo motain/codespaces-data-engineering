@@ -1,10 +1,7 @@
 {
-  "image": "ghcr.io/motain/codespaces-data-engineering:latest",
+  "image": "ghcr.io/motain/codespaces-data-engineering@sha256:placeholder",
   "hostRequirements": {
     "cpus": 2
   },
-  "onCreateCommand": "make on-create",
-  "updateContentCommand": "make update-content",
-  "postCreateCommand": "make post-create",
-  "runArgs": ["--shm-size=1g", "--cap-add=SYS_ADMIN", "--device=/dev/net/tun" ]
+  "runArgs": ["--shm-size=1g", "--cap-add=SYS_ADMIN", "--device=/dev/net/tun"]
 }

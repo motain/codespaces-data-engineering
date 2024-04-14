@@ -1,0 +1,49 @@
+#!/usr/bin/env doomscript
+;;; -*- lexical-binding: t; -*-
+;; emacs -batch -l ert -l ~/.local/bin/happy-fermat -f ert-run-tests-batch-and-exit
+(add-to-list 'load-path "~/.emacs.d/.local/straight/repos/ini.el")
+(add-to-list 'load-path "~/.emacs.d/.local/straight/repos/f.el")
+(add-to-list 'load-path "~/.emacs.d/.local/straight/repos/s.el")
+(add-to-list 'load-path "~/.emacs.d/.local/straight/repos/dash.el")
+(require 'ini)
+(require 'f)
+(require 's)
+
+(setq hf-aws-path "/home/vscode/.aws/credentials")
+(setq hf-fixture-content (concat
+                          "[default]\n"
+                          "aws_access_key_id        = ASIA2HX4SCRUXA3AB2FL\n"
+                          "aws_secret_access_key    = 7PjIPpGSIuOBDXbJ1JJd9Uk3MrId7EMe0hfWjWWd\n"))
+
+(defun hf-get (aws-path group key)
+  (let ((get (lambda (x xs) (alist-get x xs nil nil 'string-equal))))
+    (funcall get key (funcall get group (ini-decode aws-path)))))
+
+(defun hf-format (aws-path group key)
+  (let ((upcase-key (s-upcase key))
+        (value (hf-get aws-path group key)))
+    (s-lex-format "set -gx ${upcase-key} ${value}")))
+
+(defun hf-fixture ()
+  (make-temp-file nil nil nil hf-fixture-content))
+
+(ert-deftest hf-get-test ()
+  "test hf-get function"
+  (let ((aws-path (hf-fixture)))
+    (should (string= "ASIA2HX4SCRUXA3AB2FL" (hf-get aws-path "default" "aws_access_key_id")))
+    (should (string= "7PjIPpGSIuOBDXbJ1JJd9Uk3MrId7EMe0hfWjWWd" (hf-get aws-path "default" "aws_secret_access_key")))))
+
+(ert-deftest hf-format-test ()
+  "test hf-format function"
+  (let ((aws-path (hf-fixture)))
+    (should (string= "set -gx AWS_ACCESS_KEY_ID ASIA2HX4SCRUXA3AB2FL" (hf-format aws-path "default" "aws_access_key_id")))))
+
+(ert-deftest hf-fixture-test ()
+  "test hf-fixture function"
+  (should (string= hf-fixture-content (f-read-text (hf-fixture)))))
+
+(when (f-exists-p hf-aws-path)
+  (let ((alist '(aws_access_key_id aws_secret_access_key aws_session_token))
+        (format (lambda (x) (hf-format hf-aws-path "default" (symbol-name x)))))
+    (princ (concat (string-join (mapcar format alist) "\n") "\n"
+                   "set -gx AWS_DEFAULT_REGION eu-west-1" "\n"))))

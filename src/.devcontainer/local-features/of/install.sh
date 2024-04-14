@@ -22,7 +22,6 @@ su - $_REMOTE_USER <<EOF
 		pipx \
 		node \
 		awscli \
-		emacs \
 		nvim \
 		cmake \
 		libtool \
@@ -33,11 +32,19 @@ su - $_REMOTE_USER <<EOF
 		k9s \
 		kubectx \
 		saml2aws \
+		go \
 		zoxide
+	go install github.com/jessfraz/dockfmt@latest
 	pipx install \
 		poetry \
 		meltano \
-		rich-cli
+		rich-cli \
+		black \
+		pyflakes \
+		isort \
+		pipenv \
+		nose \
+		pytest
 EOF
 
 

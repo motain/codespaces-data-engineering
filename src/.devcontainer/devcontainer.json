@@ -1,6 +1,9 @@
 {
   "build": {
-    "dockerfile": "Dockerfile"
+    "dockerfile": "Dockerfile",
+    "args": {
+      "GITHUB_TOKEN": "${localEnv:GITHUB_TOKEN}"
+    }
   },
   "hostRequirements": {
     "cpus": 2
@@ -17,6 +20,7 @@
       "shallowClone": true
     },
     "./local-features/of-doom-emacs": {},
+    "./local-features/of-repos": {},
     "./local-features/of-devel": {}
   },
   "overrideFeatureInstallOrder": [
@@ -25,11 +29,8 @@
     "ghcr.io/tailscale/codespace/tailscale",
     "./local-features/of",
     "./local-features/of-doom-emacs",
+    "./local-features/of-repos",
     "./local-features/of-devel"
   ],
-  "runArgs": [
-    "--shm-size=1g",
-    "--cap-add=SYS_ADMIN",
-    "--device=/dev/net/tun"
-  ]
+  "runArgs": ["--shm-size=1g", "--cap-add=SYS_ADMIN", "--device=/dev/net/tun"]
 }

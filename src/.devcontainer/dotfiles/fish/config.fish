@@ -10,7 +10,10 @@ direnv hook fish | source
 atuin init fish | source
 fish_vi_key_bindings
 fish_add_path $HOME/.emacs.d/bin
+fish_add_path $HOME/.local/bin
+happy-fermat | source
 fish_add_path $HOME/google-cloud-sdk/bin
+fish_add_path $HOME/go/bin
 
 set -gx EDITOR happy-emacs
 alias emacs=$EDITOR
@@ -27,12 +30,6 @@ set fish_cursor_replace_one underscore
 set fish_cursor_replace underscore
 set fish_cursor_external line
 set fish_cursor_visual block
-
-# # export AWS env variables from default
-# set -gx AWS_ACCESS_KEY_ID $(aws configure get default.aws_access_key_id)
-# set -gx AWS_SECRET_ACCESS_KEY $(aws configure get default.aws_secret_access_key)
-# set -gx AWS_SESSION_TOKEN $(aws configure get default.aws_session_token)
-# set -gx AWS_DEFAULT_REGION $(aws configure get default.region)
 
 # Micromamba config
 eval "$(micromamba shell hook --shell fish)"
@@ -59,12 +56,48 @@ end
 
 function ze
     set items ALBERTO MARLON VALERY FACUNDO
-    set config (printf "%s\n" $items | fzf --prompt="Start Zellij" --height=~50% --layout=reverse --border --exit-0)
+    set config (printf "%s\n" $items | fzf --prompt="Start Zellij » " --height=~50% --layout=reverse --border --exit-0)
     if [ -z $config ]
         echo "Nothing selected"
         return 0
     end
     zellij attach --create $config
+end
+
+if not test -e $HOME/.doom-done
+    doom env
+    touch $HOME/.doom-done
+end
+
+# TODO: rename
+if not test -e $HOME/.workspaces-done
+    set -l proj codespaces-data-engineering
+    sudo chmod 775 /workspaces
+    sudo chown vscode:vscode /workspaces
+    sudo setfacl -b /workspaces
+    rm -rf /workspaces/$proj
+    mv $HOME/workspaces/$proj /workspaces
+    ln -s /workspaces/$proj $HOME/workspaces
+    touch $HOME/.workspaces-done
+end
+
+if test -e /workspaces/.codespaces/shared/.env-secrets
+  if not test -z "$SSH_CONNECTION"
+    while read line
+        set -l key (echo $line | sed "s/=.*//")
+        set -l value (echo $line | sed "s/$key=//1")
+        set -l decodedValue (echo $value | base64 -d)
+        set -gx $key "$decodedValue"
+    end < /workspaces/.codespaces/shared/.env-secrets
+  end
+end
+
+if not test -e $HOME/.atuin-done
+    if test -n "$ATUIN_LOGIN"
+        echo $ATUIN_LOGIN | bash
+        atuin sync -f
+        touch $HOME/.atuin-done
+    end
 end
 
 if status is-interactive

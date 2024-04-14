@@ -96,6 +96,7 @@ check_packages \
   file \
   fonts-dejavu-core \
   g++ \
+  libgccjit-11-dev \
   git \
   less \
   libz-dev \

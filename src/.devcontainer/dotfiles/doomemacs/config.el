@@ -35,5 +35,17 @@
 (use-package! poetry
   :defer t
   :config
-  (setq poetry-tracking-strategy 'projectile)
-  )
+  (setq poetry-tracking-strategy 'projectile))
+
+(use-package! python-black
+  :demand t
+  :after python)
+;; Feel free to throw your own personal keybindings here
+(map! :leader :desc "Blacken Buffer" "m b b" #'python-black-buffer)
+(map! :leader :desc "Blacken Region" "m b r" #'python-black-region)
+(map! :leader :desc "Blacken Statement" "m b s" #'python-black-statement)
+
+;; Fix fish problems with emacs
+(setq shell-file-name (executable-find "bash"))
+(setq-default vterm-shell (executable-find "fish"))
+(setq-default explicit-shell-file-name (executable-find "fish"))

@@ -2,276 +2,127 @@
 
 set -xe
 
-su - $_REMOTE_USER <<EOF
-	set -xe
-	export PATH=/home/linuxbrew/.linuxbrew/bin:$PATH
-	mkdir -p /home/vscode/.doom.d/snippets
-	touch /home/vscode/.doom.d/config.el
-	touch /home/vscode/.doom.d/init.el
-	touch /home/vscode/.doom.d/packages.el
-EOF
+cat <<'EOF' > /tmp/emacs.rb # {{{
+class Emacs < Formula
+  desc "GNU Emacs text editor"
+  homepage "https://www.gnu.org/software/emacs/"
+  url "https://ftp.gnu.org/gnu/emacs/emacs-29.3.tar.xz"
+  mirror "https://ftpmirror.gnu.org/emacs/emacs-29.3.tar.xz"
+  sha256 "c34c05d3ace666ed9c7f7a0faf070fea3217ff1910d004499bd5453233d742a0"
+  license "GPL-3.0-or-later"
 
-cat <<'EOF' > /home/vscode/.doom.d/config.el # {{{
-;;; $DOOMDIR/config.el -*- lexical-binding: t; -*-
+  bottle do
+    sha256 arm64_sonoma:   "b12c5e622a5deee34290b765420b402e9954b4ecf2ff4a769000c06a052d877c"
+    sha256 arm64_ventura:  "a0ed7c0789772bf97ec57bdfa3c700889380a4534209a35830d8ed590c870588"
+    sha256 arm64_monterey: "0fe859e3f01afc8106824d46fdc6d600e41e195c2288cb33581e29317c941d04"
+    sha256 sonoma:         "641e9baccb0a0c7888f4dd2f9858f86f9cc157215305721e19f724bd7ac91aa6"
+    sha256 ventura:        "3c0d3d684f029b2f0f73e79858b2ae02f6f3627238d8575c10eb044561e720a3"
+    sha256 monterey:       "1d2fd8db496416b05319b39336aa5085f0dcce10ba6cbc8338dd79bff1e4a936"
+    sha256 x86_64_linux:   "46b50c4b1164c0f527134920d174bdc690df601ce41daa32f40e78a9ac3d738b"
+  end
 
-(setq doom-theme 'doom-one)
+  head do
+    url "https://github.com/emacs-mirror/emacs.git", branch: "master"
 
-(setq display-line-numbers-type 'relative)
+    depends_on "autoconf" => :build
+    depends_on "gnu-sed" => :build
+    depends_on "texinfo" => :build
+  end
 
-(setq org-directory "~/org/")
+  depends_on "pkg-config" => :build
+  depends_on "gnutls"
+  depends_on "jansson"
+  depends_on "tree-sitter"
 
-;; don't prompt before exiting
-(setq confirm-kill-emacs nil)
-;; don't prompt the first time we start vterm
-(setq vterm-always-compile-module t)
-;; use fish instead of bash
-(setq vterm-shell "/home/linuxbrew/.linuxbrew/bin/fish")
-;; default path has the wrong permissions
-;; (setq server-socket-dir (concat "~/.emacs.d/" (getenv "ZELLIJ_SESSION_NAME") "/"))
-;; shortcut to start deer
-(evil-global-set-key 'normal "-" 'deer)
-;; When done with this frame, type SPC q f`?
-(setq server-client-instructions nil)
-;; No prompt
-(map! :leader
-      :desc "Delete frame" "q f" #'delete-frame)
+  uses_from_macos "libxml2"
+  uses_from_macos "ncurses"
 
-(after! keycast
-  (define-minor-mode keycast-mode
-    "Show current command and its key binding in the mode line."
-    :global t
-    (if keycast-mode
-        (add-hook 'pre-command-hook 'keycast--update t)
-      (remove-hook 'pre-command-hook 'keycast--update))))
-(add-to-list 'global-mode-string '("" keycast-mode-line))
-(require 'keycast)
+  on_linux do
+    depends_on "jpeg-turbo"
+  end
 
-(use-package! poetry
-  :defer t
-  :config
-  (setq poetry-tracking-strategy 'projectile)
-  )
+  def install
+    # Mojave uses the Catalina SDK which causes issues like
+    # https://github.com/Homebrew/homebrew-core/issues/46393
+    # https://github.com/Homebrew/homebrew-core/pull/70421
+    ENV["ac_cv_func_aligned_alloc"] = "no" if OS.mac? && MacOS.version == :mojave
 
-EOF
-# }}}
+    args = %W[
+      --disable-silent-rules
+      --enable-locallisppath=#{HOMEBREW_PREFIX}/share/emacs/site-lisp
+      --infodir=#{info}/emacs
+      --prefix=#{prefix}
+      --with-gnutls
+      --with-native-compilation
+      --without-x
+      --with-xml2
+      --without-dbus
+      --with-modules
+      --without-ns
+      --without-imagemagick
+      --without-selinux
+      --with-tree-sitter
+    ]
 
-cat <<'EOF' > /home/vscode/.doom.d/init.el # {{{
-;;; init.el -*- lexical-binding: t; -*-
+    if build.head?
+      ENV.prepend_path "PATH", Formula["gnu-sed"].opt_libexec/"gnubin"
+      system "./autogen.sh"
+    end
 
-(doom! :input
-       ;;bidi              ; (tfel ot) thgir etirw uoy gnipleh
-       ;;chinese
-       ;;japanese
-       ;;layout            ; auie,ctsrnm is the superior home row
+    File.write "lisp/site-load.el", <<~EOS
+      (setq exec-path (delete nil
+        (mapcar
+          (lambda (elt)
+            (unless (string-match-p "Homebrew/shims" elt) elt))
+          exec-path)))
+    EOS
 
-       :completion
-       company           ; the ultimate code completion backend
-       ;;helm              ; the *other* search engine for love and life
-       ;;ido               ; the other *other* search engine...
-       ;;ivy               ; a search engine for love and life
-       vertico           ; the search engine of the future
+    system "./configure", *args
+    system "make"
+    system "make", "install"
 
-       :ui
-       ;;deft              ; notational velocity for Emacs
-       doom              ; what makes DOOM look the way it does
-       doom-dashboard    ; a nifty splash screen for Emacs
-       ;;doom-quit         ; DOOM quit-message prompts when you quit Emacs
-       ;;(emoji +unicode)  ; 🙂
-       hl-todo           ; highlight TODO/FIXME/NOTE/DEPRECATED/HACK/REVIEW
-       ;;hydra
-       ;;indent-guides     ; highlighted indent columns
-       ;;ligatures         ; ligatures and symbols to make your code pretty again
-       ;;minimap           ; show a map of the code on the side
-       modeline          ; snazzy, Atom-inspired modeline, plus API
-       ;;nav-flash         ; blink cursor line after big motions
-       ;;neotree           ; a project drawer, like NERDTree for vim
-       ophints           ; highlight the region an operation acts on
-       (popup +defaults)   ; tame sudden yet inevitable temporary windows
-       ;;tabs              ; a tab bar for Emacs
-       ;;treemacs          ; a project drawer, like neotree but cooler
-       ;;unicode           ; extended unicode support for various languages
-       (vc-gutter +pretty) ; vcs diff in the fringe
-       vi-tilde-fringe   ; fringe tildes to mark beyond EOB
-       ;;window-select     ; visually switch windows
-       ;;workspaces        ; tab emulation, persistence & separate workspaces
-       ;;zen               ; distraction-free coding or writing
+    # Follow MacPorts and don't install ctags from Emacs. This allows Vim
+    # and Emacs and ctags to play together without violence.
+    (bin/"ctags").unlink
+    (man1/"ctags.1.gz").unlink
+  end
 
-       :editor
-       (evil +everywhere); come to the dark side, we have cookies
-       file-templates    ; auto-snippets for empty files
-       fold              ; (nigh) universal code folding
-       (format +onsave)  ; automated prettiness
-       ;;god               ; run Emacs commands without modifier keys
-       ;;lispy             ; vim for lisp, for people who don't like vim
-       ;;multiple-cursors  ; editing in many places at once
-       ;;objed             ; text object editing for the innocent
-       ;;parinfer          ; turn lisp into python, sort of
-       ;;rotate-text       ; cycle region at point between text candidates
-       snippets          ; my elves. They type so I don't have to
-       ;;word-wrap         ; soft wrapping with language-aware indent
+  service do
+    run [opt_bin/"emacs", "--fg-daemon"]
+    keep_alive true
+  end
 
-       :emacs
-       (dired +ranger +icons)            ; making dired pretty [functional]
-       electric          ; smarter, keyword-based electric-indent
-       ;;ibuffer         ; interactive buffer management
-       undo              ; persistent, smarter undo for your inevitable mistakes
-       vc                ; version-control and Emacs, sitting in a tree
-
-       :term
-       ;;eshell            ; the elisp shell that works everywhere
-       ;;shell             ; simple shell REPL for Emacs
-       ;;term              ; basic terminal emulator for Emacs
-       vterm             ; the best terminal emulation in Emacs
-
-       :checkers
-       syntax              ; tasing you for every semicolon you forget
-       ;;(spell +flyspell) ; tasing you for misspelling mispelling
-       ;;grammar           ; tasing grammar mistake every you make
-
-       :tools
-       ;;ansible
-       ;;biblio            ; Writes a PhD for you (citation needed)
-       ;;collab            ; buffers with friends
-       ;;debugger          ; FIXME stepping through code, to help you add bugs
-       ;;direnv
-       (docker +lsp)
-       ;;editorconfig      ; let someone else argue about tabs vs spaces
-       ;;ein               ; tame Jupyter notebooks with emacs
-       (eval +overlay)     ; run code, run (also, repls)
-       lookup              ; navigate your code and its documentation
-       lsp               ; M-x vscode
-       magit             ; a git porcelain for Emacs
-       ;;make              ; run make tasks from Emacs
-       ;;pass              ; password manager for nerds
-       ;;pdf               ; pdf enhancements
-       ;;prodigy           ; FIXME managing external services & code builders
-       ;;rgb               ; creating color strings
-       ;;taskrunner        ; taskrunner for all your projects
-       ;;terraform         ; infrastructure as code
-       ;;tmux              ; an API for interacting with tmux
-       tree-sitter       ; syntax and parsing, sitting in a tree...
-       ;;upload            ; map local to remote projects via ssh/ftp
-
-       :os
-       (:if (featurep :system 'macos) macos)  ; improve compatibility with macOS
-       (tty +osc)              ; improve the terminal Emacs experience
-
-       :lang
-       ;;agda              ; types of types of types of types...
-       ;;beancount         ; mind the GAAP
-       ;;(cc +lsp)         ; C > C++ == 1
-       ;;clojure           ; java with a lisp
-       ;;common-lisp       ; if you've seen one lisp, you've seen them all
-       ;;coq               ; proofs-as-programs
-       ;;crystal           ; ruby at the speed of c
-       ;;csharp            ; unity, .NET, and mono shenanigans
-       ;;data              ; config/data formats
-       ;;(dart +flutter)   ; paint ui and not much else
-       ;;dhall
-       ;;elixir            ; erlang done right
-       ;;elm               ; care for a cup of TEA?
-       emacs-lisp        ; drown in parentheses
-       ;;erlang            ; an elegant language for a more civilized age
-       ;;ess               ; emacs speaks statistics
-       ;;factor
-       ;;faust             ; dsp, but you get to keep your soul
-       ;;fortran           ; in FORTRAN, GOD is REAL (unless declared INTEGER)
-       ;;fsharp            ; ML stands for Microsoft's Language
-       ;;fstar             ; (dependent) types and (monadic) effects and Z3
-       ;;gdscript          ; the language you waited for
-       ;;(go +lsp)         ; the hipster dialect
-       ;;(graphql +lsp)    ; Give queries a REST
-       ;;(haskell +lsp)    ; a language that's lazier than I am
-       ;;hy                ; readability of scheme w/ speed of python
-       ;;idris             ; a language you can depend on
-       ;;json              ; At least it ain't XML
-       ;;(java +lsp)       ; the poster child for carpal tunnel syndrome
-       ;;javascript        ; all(hope(abandon(ye(who(enter(here))))))
-       ;;julia             ; a better, faster MATLAB
-       ;;kotlin            ; a better, slicker Java(Script)
-       ;;latex             ; writing papers in Emacs has never been so fun
-       ;;lean              ; for folks with too much to prove
-       ;;ledger            ; be audit you can be
-       ;;lua               ; one-based indices? one-based indices
-       markdown          ; writing docs for people to ignore
-       ;;nim               ; python + lisp at the speed of c
-       ;;nix               ; I hereby declare "nix geht mehr!"
-       ;;ocaml             ; an objective camel
-       org               ; organize your plain life in plain text
-       ;;php               ; perl's insecure younger brother
-       ;;plantuml          ; diagrams for confusing people more
-       ;;purescript        ; javascript, but functional
-       (python +lsp +poetry +pyright +tree-sitter)           ; beautiful is better than ugly
-       ;;qt                ; the 'cutest' gui framework ever
-       ;;racket            ; a DSL for DSLs
-       ;;raku              ; the artist formerly known as perl6
-       ;;rest              ; Emacs as a REST client
-       ;;rst               ; ReST in peace
-       ;;(ruby +rails)     ; 1.step {|i| p "Ruby is #{i.even? ? 'love' : 'life'}"}
-       ;;(rust +lsp)       ; Fe2O3.unwrap().unwrap().unwrap().unwrap()
-       ;;scala             ; java, but good
-       ;;(scheme +guile)   ; a fully conniving family of lisps
-       sh                ; she sells {ba,z,fi}sh shells on the C xor
-       ;;sml
-       ;;solidity          ; do you need a blockchain? No.
-       ;;swift             ; who asked for emoji variables?
-       ;;terra             ; Earth and Moon in alignment for performance.
-       ;;web               ; the tubes
-       (yaml +lsp +tree-sitter)             ; JSON, but readable
-       ;;zig               ; C, but simpler
-
-       :email
-       ;;(mu4e +org +gmail)
-       ;;notmuch
-       ;;(wanderlust +gmail)
-
-       :app
-       ;;calendar
-       ;;emms
-       ;;everywhere        ; *leave* Emacs!? You must be joking
-       ;;irc               ; how neckbeards socialize
-       ;;(rss +org)        ; emacs as an RSS reader
-       ;;twitter           ; twitter client https://twitter.com/vnought
-
-       :config
-       ;;literate
-       (default +bindings +smartparens))
+  test do
+    assert_equal "4", shell_output("#{bin}/emacs --batch --eval=\"(print (+ 2 2))\"").strip
+  end
+end
 EOF
 # }}}
 
-cat <<'EOF' > /home/vscode/.doom.d/packages.el # {{{
-;; -*- no-byte-compile: t; -*-
-
-(package! git-auto-commit-mode)
-(package! keycast)
-EOF
-# }}}
-
-su - $_REMOTE_USER <<EOF
-	set -xe
-	export PATH=/home/linuxbrew/.linuxbrew/bin:$PATH
-	git clone --depth 1 https://github.com/doomemacs/doomemacs ~/.emacs.d
+su - $_REMOTE_USER <<'EOF'
+    set -xe
+    export PATH=/home/linuxbrew/.linuxbrew/bin:$PATH
+    cd /tmp/dotfiles
+    make install
+    # no native compilation for now
+    brew install emacs
+    git clone --depth 1 https://github.com/doomemacs/doomemacs ~/.emacs.d
+    ~/.emacs.d/bin/doom sync
+    # no more commands after doom
 EOF
 
 su - $_REMOTE_USER <<EOF
-	set -xe
-	export PATH=/home/linuxbrew/.linuxbrew/bin:$PATH
-	~/.emacs.d/bin/doom sync
-	# no more commands after doom
+    set -xe
+    export PATH=/home/linuxbrew/.linuxbrew/bin:$PATH
+    ~/.emacs.d/bin/doom env
+    # no more commands after doom
 EOF
 
 su - $_REMOTE_USER <<EOF
-	set -xe
-	export PATH=/home/linuxbrew/.linuxbrew/bin:$PATH
-	~/.emacs.d/bin/doom env
-	# no more commands after doom
-EOF
-
-su - $_REMOTE_USER <<EOF
-	set -xe
-	export PATH=/home/linuxbrew/.linuxbrew/bin:$PATH
-	emacs --fg-daemon --eval '(setq vterm-always-compile-module t)' --eval '(vterm-module-compile)' --eval '(kill-emacs)'
-	npm -g --prefix /home/vscode/.emacs.d/.local/etc/lsp/npm/pyright install pyright
+    set -xe
+    export PATH=/home/linuxbrew/.linuxbrew/bin:$PATH
+    emacs --fg-daemon --eval '(setq vterm-always-compile-module t)' --eval '(vterm-module-compile)' --eval '(kill-emacs)'
+    npm -g --prefix /home/vscode/.emacs.d/.local/etc/lsp/npm/pyright install pyright
 EOF
 
 echo 'Done!'
