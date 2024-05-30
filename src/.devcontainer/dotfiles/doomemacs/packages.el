@@ -8,3 +8,4 @@
 (package! dash)
 (package! drag-stuff)
 (package! python-black)
+(package! interaction-log :recipe (:host github :repo "amiorin/interaction-log.el"))

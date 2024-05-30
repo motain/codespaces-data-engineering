@@ -1,0 +1,36 @@
+name: 'outer-loop'
+on: # rebuild any main branch changes
+  push:
+    paths-ignore:
+      - '.devcontainer/**'
+    branches:
+      - main
+
+jobs:
+  new-devcontainer:
+    runs-on: ubuntu-latest
+    container:
+      image: ghcr.io/motain/codespaces-data-engineering:latest
+      credentials:
+        username: onefootball-data-insights
+        password: ${{ secrets.ghp_token }}
+      options: '--user vscode'
+    env:
+      GITHUB_TOKEN: ${{ secrets.ghp_token }}
+      GHP_TOKEN: ${{ secrets.ghp_token }}
+      HOME: /home/vscode
+      PATH: /home/vscode/go/bin:/home/vscode/google-cloud-sdk/bin:/home/vscode/.local/bin:/home/vscode/.emacs.d/bin:/home/linuxbrew/.linuxbrew/bin:/home/linuxbrew/.linuxbrew/sbin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+    defaults:
+      run:
+        working-directory: /home/vscode/workspaces/codespaces-data-engineering
+    steps:
+      - name: Pull repo
+        run: gh repo sync --force
+      - name: Install
+        run: bb install
+      - name: Test happy-fermat
+        run: bb test
+      - name: Fix permissions
+        run: sudo setfacl --modify user:vscode:rw /var/run/docker.sock
+      - name: Build, publish, and commit a new image
+        run: bb push

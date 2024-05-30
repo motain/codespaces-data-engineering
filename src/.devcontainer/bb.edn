@@ -1,0 +1,44 @@
+; https://www.braveclojure.com/quests/babooka/
+{:tasks
+ {:requires ([babashka.fs :as fs])
+  :init     (do (defn print-public-task [k]
+                  (let [{:keys [:private :name]} (current-task)]
+                    (when-not private
+                      (println (case k :enter "☐" "✓") name))))
+                (defn copy-tree [a b]
+                  (println (str "> copy-tree " a " " b))
+                  (fs/copy-tree (fs/expand-home a) (fs/expand-home b) {:replace-existing true}))
+                (defn copy [a b]
+                  (println (str "> copy " a " " b))
+                  (fs/copy (fs/expand-home a) (fs/expand-home b) {:replace-existing true})))
+  :enter    (print-public-task :enter)
+  :leave    (print-public-task :leave)
+  backup    {:doc "Copy all dotfiles from the home to the repo"
+             :task (do
+                     (copy "~/.config/fish/config.fish" "dotfiles/fish/config.fish")
+                     (copy "~/.config/direnv/direnv.toml" "dotfiles/direnv/direnv.toml")
+                     (copy "~/.config/zellij/config.kdl" "dotfiles/zellij/config.kdl")
+                     (copy "~/.config/zellij/layouts/minimal.kdl" "dotfiles/zellij/layouts/minimal.kdl")
+                     (copy "~/.gitconfig" "dotfiles/git/.gitconfig")
+                     (copy "~/.doom.d/config.el" "dotfiles/doomemacs/config.el")
+                     (copy "~/.doom.d/init.el" "dotfiles/doomemacs/init.el")
+                     (copy "~/.doom.d/packages.el" "dotfiles/doomemacs/packages.el")
+                     (copy-tree "~/.doom.d/snippets/text-mode" "dotfiles/doomemacs/snippets/text-mode")
+                     (copy "~/.config/lazygit/config.yml" "dotfiles/lazygit/config.yml")
+                     (copy "~/.config/atuin/config.toml" "dotfiles/atuin/config.toml")
+                     (copy "~/.config/starship.toml" "dotfiles/starship/starship.toml")
+                     (copy "~/.local/bin/happy-fermat" "dotfiles/bin/happy-fermat")
+                     (copy "~/.local/bin/happy-emacs" "dotfiles/bin/happy-emacs")
+                     (copy "~/.local/bin/happy-clojure" "dotfiles/bin/happy-clojure")
+                     (copy "~/.local/bin/happy-beetle" "dotfiles/bin/happy-beetle"))}
+  install   {:doc "Copy all dotfiles from the repo to the home"
+             :task (do
+                     (copy-tree "dotfiles/fish" "~/.config/fish")
+                     (copy-tree "dotfiles/direnv" "~/.config/direnv")
+                     (copy-tree "dotfiles/zellij" "~/.config/zellij")
+                     (copy "dotfiles/git/.gitconfig" "~/.gitconfig")
+                     (copy-tree "dotfiles/doomemacs" "~/.doom.d")
+                     (copy-tree "dotfiles/lazygit" "~/.config/lazygit")
+                     (copy-tree "dotfiles/atuin" "~/.config/atuin")
+                     (copy "dotfiles/starship/starship.toml" "~/.config/starship.toml")
+                     (copy-tree "dotfiles/bin/" "~/.local/bin"))}}}

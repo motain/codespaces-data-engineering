@@ -58,3 +58,4 @@ plugins {
 
 default_layout "minimal"
 scrollback_editor "/home/vscode/.local/bin/happy-emacs"
+session_serialization false

@@ -7,57 +7,86 @@
 (require 's)
 (require 'f)
 
-(setq shell-file-name (executable-find "bash"))
-(setq hb-container-id (s-chomp (shell-command-to-string
-                                (concat "GITHUB_TOKEN=$GHP_TOKEN gh api "
-                                        "-H \"Accept: application/vnd.github+json\" "
-                                        "-H \"X-GitHub-Api-Version: 2022-11-28\" "
-                                        "/orgs/motain/packages/container/naughty-thinkable/versions "
-                                        "-q 'map(select(.metadata.container.tags[0] == \"latest\"))[0].id'"))))
-(setq hb-container-sha (s-chomp (shell-command-to-string
-                                 (concat "GITHUB_TOKEN=$GHP_TOKEN gh api "
-                                         "-H \"Accept: application/vnd.github+json\" "
-                                         "-H \"X-GitHub-Api-Version: 2022-11-28\" "
-                                         "/orgs/motain/packages/container/naughty-thinkable/versions/"
-                                         hb-container-id
-                                         " -q '.name'"))))
-(setq hb-temp-dir (s-chomp (shell-command-to-string "mktemp -d")))
-(shell-command-to-string (concat "gh repo clone "
-                                 "motain/naughty-thinkable "
-                                 hb-temp-dir
-                                 " -- --depth 1"))
-(setq hb-previous-version-dir (concat hb-temp-dir
-                                      "/.devcontainer/"
-                                      (s-chomp (shell-command-to-string
-                                                "date +'%Y-%m-%d-%H-%M'"))))
-(shell-command-to-string (concat "mkdir -p "
-                                 hb-previous-version-dir))
-(setq hb-devcontainer-filename (concat hb-temp-dir "/.devcontainer/devcontainer.json"))
-(shell-command-to-string (concat "cp "
-                                 hb-devcontainer-filename
-                                 " "
-                                 hb-previous-version-dir))
-(setq hb-devcontainer-content (shell-command-to-string (concat "cat " hb-devcontainer-filename)))
-(setq hb-devcontainer-new-content (replace-regexp-in-string "sha256.*\"" (concat hb-container-sha "\"") hb-devcontainer-content))
-(f-write-text hb-devcontainer-new-content 'utf-8 hb-devcontainer-filename)
-(shell-command (concat "git --work-tree "
-                       hb-temp-dir
-                       " --git-dir "
-                       hb-temp-dir
-                       "/.git"
-                       " add .'"
-                       "'"))
-(shell-command (concat "git --work-tree "
-                       hb-temp-dir
-                       " --git-dir "
-                       hb-temp-dir
-                       "/.git"
-                       " commit -a -m '"
-                       hb-container-sha
-                       "'"))
-(shell-command (concat "git --work-tree "
-                       hb-temp-dir
-                       " --git-dir "
-                       hb-temp-dir
-                       "/.git"
-                       " push"))
+(defun main ()
+  (setq shell-file-name (executable-find "bash"))
+
+  ;; TODO: rename
+  ;; Use the GITHUB_TOKEN to authenticate git commands
+  (setenv "GIT_CONFIG_COUNT" "2")
+  (setenv "GIT_CONFIG_KEY_0" "credential.https://github.com.username")
+  (setenv "GIT_CONFIG_VALUE_0" "onefootball-data-insights")
+  (setenv "GIT_CONFIG_KEY_1" "credential.https://github.com.helper")
+  (setenv "GIT_CONFIG_VALUE_1" "!f() { test \"$1\" = get && echo \"password=${GITHUB_TOKEN}\"; }; f")
+
+  (setq hb-repo-name (if (elt argv 1) (elt argv 1) "naughty-thinkable"))
+  (setq hb-container-id (s-chomp (shell-command-to-string
+                                  (concat "GITHUB_TOKEN=$GHP_TOKEN gh api "
+                                          "-H \"Accept: application/vnd.github+json\" "
+                                          "-H \"X-GitHub-Api-Version: 2022-11-28\" "
+                                          "/orgs/motain/packages/container/"
+                                          hb-repo-name
+                                          "/versions "
+                                          "-q 'map(select(.metadata.container.tags[0] == \"latest\"))[0].id'"))))
+  (setq hb-container-sha (s-chomp (shell-command-to-string
+                                   (concat "GITHUB_TOKEN=$GHP_TOKEN gh api "
+                                           "-H \"Accept: application/vnd.github+json\" "
+                                           "-H \"X-GitHub-Api-Version: 2022-11-28\" "
+                                           "/orgs/motain/packages/container/"
+                                           hb-repo-name
+                                           "/versions/"
+                                           hb-container-id
+                                           " -q '.name'"))))
+  (setq hb-temp-dir (s-chomp (shell-command-to-string "mktemp -d")))
+  (shell-command-to-string (concat "gh repo clone "
+                                   "motain/"
+                                   hb-repo-name
+                                   " "
+                                   hb-temp-dir
+                                   " -- --depth 1"))
+  (setq hb-previous-version-dir (concat hb-temp-dir
+                                        "/.devcontainer/"
+                                        (s-chomp (shell-command-to-string
+                                                  "date +'%Y-%m-%d-%H-%M'"))))
+  (shell-command-to-string (concat "mkdir -p "
+                                   hb-previous-version-dir))
+  (setq hb-devcontainer-filename (concat hb-temp-dir "/.devcontainer/devcontainer.json"))
+  (shell-command-to-string (concat "cp "
+                                   hb-devcontainer-filename
+                                   " "
+                                   hb-previous-version-dir))
+  (setq hb-devcontainer-content (shell-command-to-string (concat "cat " hb-devcontainer-filename)))
+  (setq hb-devcontainer-new-content (replace-regexp-in-string "sha256.*\"" (concat hb-container-sha "\"") hb-devcontainer-content))
+  (f-write-text hb-devcontainer-new-content 'utf-8 hb-devcontainer-filename)
+  (if (string= hb-devcontainer-content hb-devcontainer-new-content)
+      (princ "No new version published")
+    (shell-command (concat "git --work-tree "
+                           hb-temp-dir
+                           " --git-dir "
+                           hb-temp-dir
+                           "/.git"
+                           " add ."))
+    (shell-command (concat "git --work-tree "
+                           hb-temp-dir
+                           " --git-dir "
+                           hb-temp-dir
+                           "/.git"
+                           " commit -a -m '"
+                           hb-container-sha
+                           "'"))
+    (shell-command (concat "git --work-tree "
+                           hb-temp-dir
+                           " --git-dir "
+                           hb-temp-dir
+                           "/.git"
+                           " push")))
+  )
+(unless (member 'ert features)
+  (main))
+
+(defun hb-shell-command (command)
+  (shell-command command)
+  (error "foo"))
+
+(ert-deftest hb-shell-command-test ()
+  "signal error from the subprocess"
+  (should-error (hb-shell-command "false")))

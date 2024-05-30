@@ -14,7 +14,7 @@
       "version": "latest"
     },
     "ghcr.io/tailscale/codespace/tailscale": {
-      "version": "1.58.2"
+      "version": "1.66.3"
     },
     "./local-features/of": {
       "shallowClone": true

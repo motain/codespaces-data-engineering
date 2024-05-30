@@ -1,0 +1,31 @@
+{:tasks
+ {:init (do (defn print-public-task [k]
+              (let [{:keys [:private :name]} (current-task)]
+                (when-not private
+                  (println (case k :enter "☐" "✓") name))))
+            (defn shell-with-echo [arg]
+              (println (str "> " arg))
+              (shell arg))
+            (defn shell-with-echo-and-input [input arg]
+              (println (str "> " arg))
+              (shell {:in input} arg))
+            (defn shell-with-echo-and-dir [dir arg]
+              (println (str "> cd " dir))
+              (println (str "> " arg))
+              (shell {:dir dir} arg)))
+  :enter (print-public-task :enter)
+  :leave (print-public-task :leave)
+  build {:doc "Build the devcontainer."
+         :task (shell-with-echo "devcontainer build --workspace-folder src")}
+  up {:doc "Build and run locally the devcontainer."
+      :task (shell-with-echo "devcontainer up --workspace-folder src")}
+  push {:doc "Build, push, and commit a new devcontainer."
+        :task (do (shell-with-echo-and-input (System/getenv "GHP_TOKEN") "docker login ghcr.io -u onefootball-data-insights --password-stdin")
+                  (shell-with-echo "devcontainer build --workspace-folder src --push true --image-name ghcr.io/motain/codespaces-data-engineering")
+                  (shell-with-echo "happy-beetle codespaces-data-engineering"))}
+  backup {:doc "Backup the dotiles."
+          :task (shell-with-echo-and-dir "src/.devcontainer" "bb backup")}
+  install {:doc "Install the dotfiles."
+           :task (shell-with-echo-and-dir "src/.devcontainer" "bb install")}
+  test {:doc "Run the tests of the devcontainer."
+        :task (shell-with-echo "emacs -batch -l ert -l ~/.local/bin/happy-fermat -f ert-run-tests-batch-and-exit")}}}

@@ -103,7 +103,7 @@ su - $_REMOTE_USER <<'EOF'
     set -xe
     export PATH=/home/linuxbrew/.linuxbrew/bin:$PATH
     cd /tmp/dotfiles
-    make install
+    bb install
     # no native compilation for now
     brew install emacs
     git clone --depth 1 https://github.com/doomemacs/doomemacs ~/.emacs.d
@@ -123,6 +123,8 @@ su - $_REMOTE_USER <<EOF
     export PATH=/home/linuxbrew/.linuxbrew/bin:$PATH
     emacs --fg-daemon --eval '(setq vterm-always-compile-module t)' --eval '(vterm-module-compile)' --eval '(kill-emacs)'
     npm -g --prefix /home/vscode/.emacs.d/.local/etc/lsp/npm/pyright install pyright
+    npm -g --prefix /home/vscode/.emacs.d/.local/etc/lsp/npm/dockerfile-language-server-nodejs install dockerfile-language-server-nodejs
+    npm -g --prefix /home/vscode/.emacs.d/.local/etc/lsp/npm/yaml-language-server install yaml-language-server
 EOF
 
 echo 'Done!'
