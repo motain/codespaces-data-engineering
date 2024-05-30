@@ -1,0 +1,7 @@
+{
+  "image": "ghcr.io/motain/codespaces-data-engineering@sha256:25d802662951333538f5da07fbb89d391afac1c341dcd9559bcbc948ffc946db",
+  "hostRequirements": {
+    "cpus": 2
+  },
+  "runArgs": ["--shm-size=1g", "--cap-add=SYS_ADMIN", "--device=/dev/net/tun"]
+}

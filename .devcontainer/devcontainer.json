@@ -1,5 +1,5 @@
 {
-  "image": "ghcr.io/motain/codespaces-data-engineering@sha256:25d802662951333538f5da07fbb89d391afac1c341dcd9559bcbc948ffc946db",
+  "image": "ghcr.io/motain/codespaces-data-engineering@sha256:51829ee37bf218b59fe3991560630e7b0cd375844f4c1b6423b07b3340059622",
   "hostRequirements": {
     "cpus": 2
   },
